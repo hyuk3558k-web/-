@@ -1,2 +1,24 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=NanumSquareRound:wght@400;700;800&display=swap');
+
+body {
+  font-family: 'NanumSquareRound', sans-serif;
+  color: #3D3229;
+  background-color: #FDF8F0;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Touch-friendly tap targets */
+button, a, label {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Remove default tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

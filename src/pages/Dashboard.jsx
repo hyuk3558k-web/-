@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CHILDREN, CHILD_IDS } from '../data/children'
 import { useHomework } from '../hooks/useHomework'
 import { useStickers } from '../hooks/useStickers'
 import { calcAchievement } from '../utils/achievement'
+import { startAchievementMonitor, stopAchievementMonitor } from '../utils/notifications'
 import ChildCard from '../components/ChildCard'
 import Calendar from '../components/Calendar'
+import NotificationToggle from '../components/NotificationToggle'
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -70,7 +72,10 @@ export default function Dashboard() {
 
   return (
     <div>
-      <p className="text-[#8C7B6B] text-sm mb-6">{formatDateKorean(today)}</p>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-[#8C7B6B] text-sm">{formatDateKorean(today)}</p>
+        <NotificationToggle />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {CHILD_IDS.map(id => (
@@ -95,6 +100,18 @@ function AchievementCalendar({ year, month, today, todayStr, onChangeMonth, onSe
   const juwonHw = useHomework('juwon', today)
   const yewonHw = useHomework('yewon', today)
   const chaewonHw = useHomework('chaewon', today)
+
+  const homeworkRef = useRef({ juwonHw, yewonHw, chaewonHw })
+  homeworkRef.current = { juwonHw, yewonHw, chaewonHw }
+
+  useEffect(() => {
+    startAchievementMonitor(() => [
+      { childName: CHILDREN.juwon.name, items: homeworkRef.current.juwonHw.items },
+      { childName: CHILDREN.yewon.name, items: homeworkRef.current.yewonHw.items },
+      { childName: CHILDREN.chaewon.name, items: homeworkRef.current.chaewonHw.items },
+    ])
+    return () => stopAchievementMonitor()
+  }, [])
 
   const rates = [
     calcAchievement(juwonHw.items),

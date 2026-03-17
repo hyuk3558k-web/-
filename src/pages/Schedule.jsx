@@ -7,6 +7,7 @@ import { useStickers } from '../hooks/useStickers'
 import ScheduleTimeline from '../components/ScheduleTimeline'
 import HomeworkChecklist from '../components/HomeworkChecklist'
 import StickerPanel from '../components/StickerPanel'
+import NotificationToggle from '../components/NotificationToggle'
 
 const DAY_LABELS = [
   { key: 'mon', label: '월' },
@@ -101,7 +102,10 @@ export default function Schedule() {
             />
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-            <h3 className="font-bold text-[#3D3229] mb-4">🌟 칭찬 스티커</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[#3D3229]">🌟 칭찬 스티커</h3>
+              <NotificationToggle />
+            </div>
             <StickerPanel
               childName={child.name}
               stickers={stickers}

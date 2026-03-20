@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Star, Heart, Crown, X } from 'lucide-react'
+import { Star, Heart, Crown, X, Trash2 } from 'lucide-react'
+import AdminPinModal from './AdminPinModal'
 
 const STICKER_TYPES = [
   { type: 'star', icon: Star, label: '별' },
@@ -7,9 +8,18 @@ const STICKER_TYPES = [
   { type: 'crown', icon: Crown, label: '왕관' },
 ]
 
-export default function StickerPanel({ childName, stickers, onGiveSticker }) {
+const STICKER_ICON_MAP = {
+  star: Star,
+  heart: Heart,
+  crown: Crown,
+}
+
+export default function StickerPanel({ childName, stickers, onGiveSticker, onRemoveSticker }) {
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState('')
+  const [adminVerified, setAdminVerified] = useState(false)
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null) // 'give' or { type: 'remove', index }
 
   const handleGive = (type) => {
     if (!from.trim()) return
@@ -18,15 +28,84 @@ export default function StickerPanel({ childName, stickers, onGiveSticker }) {
     setFrom('')
   }
 
+  const handleStickerButtonClick = () => {
+    if (adminVerified) {
+      setOpen(true)
+    } else {
+      setPendingAction('give')
+      setShowPinModal(true)
+    }
+  }
+
+  const handleRemoveClick = (index) => {
+    if (adminVerified) {
+      onRemoveSticker(index)
+    } else {
+      setPendingAction({ type: 'remove', index })
+      setShowPinModal(true)
+    }
+  }
+
+  const handlePinSuccess = () => {
+    setAdminVerified(true)
+    setShowPinModal(false)
+    if (pendingAction === 'give') {
+      setOpen(true)
+    } else if (pendingAction && pendingAction.type === 'remove') {
+      onRemoveSticker(pendingAction.index)
+    }
+    setPendingAction(null)
+  }
+
+  const handlePinClose = () => {
+    setShowPinModal(false)
+    setPendingAction(null)
+  }
+
+  const recentHistory = (stickers.history || []).slice(-5).reverse()
+
   return (
     <div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-3">
         <span>⭐ {stickers.total}개</span>
-        <button onClick={() => setOpen(true)}
+        <button onClick={handleStickerButtonClick}
           className="text-xs bg-[#F47458] text-white px-3 py-1 rounded-lg hover:bg-[#e0634a]">
           스티커 주기
         </button>
       </div>
+
+      {/* Sticker history */}
+      {recentHistory.length > 0 && (
+        <div className="space-y-1.5">
+          {recentHistory.map((entry, i) => {
+            const realIndex = stickers.history.length - 1 - i
+            const IconComp = STICKER_ICON_MAP[entry.type] || Star
+            const dateStr = new Date(entry.date).toLocaleDateString('ko-KR', {
+              month: 'short', day: 'numeric'
+            })
+            return (
+              <div key={realIndex} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-1.5">
+                <div className="flex items-center gap-2">
+                  <IconComp size={16} className="text-[#F47458]" />
+                  <span className="text-[#3D3229]">{entry.from}</span>
+                  <span className="text-gray-400 text-xs">{dateStr}</span>
+                </div>
+                <button onClick={() => handleRemoveClick(realIndex)}
+                  className="text-gray-300 hover:text-red-400 transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* PIN modal */}
+      {showPinModal && (
+        <AdminPinModal onSuccess={handlePinSuccess} onClose={handlePinClose} />
+      )}
+
+      {/* Sticker giving modal */}
       {open && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-80 shadow-xl">

@@ -8,6 +8,8 @@ import ScheduleTimeline from '../components/ScheduleTimeline'
 import HomeworkChecklist from '../components/HomeworkChecklist'
 import StickerPanel from '../components/StickerPanel'
 import NotificationToggle from '../components/NotificationToggle'
+import AdminPinModal from '../components/AdminPinModal'
+import { Lock, Unlock } from 'lucide-react'
 
 const DAY_LABELS = [
   { key: 'mon', label: '월' },
@@ -35,7 +37,9 @@ export default function Schedule() {
 
   const { blocks } = useSchedule(name, selectedDate)
   const { items, toggleComplete, uploadPhoto } = useHomework(name, today)
-  const { stickers, giveSticker } = useStickers(name)
+  const { stickers, giveSticker, removeSticker } = useStickers(name)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showPinModal, setShowPinModal] = useState(false)
 
   if (!child) {
     return (
@@ -94,12 +98,30 @@ export default function Schedule() {
         </div>
         <div>
           <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)] mb-4">
-            <h3 className="font-bold text-[#3D3229] mb-4">✏️ 오늘의 숙제</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[#3D3229]">✏️ 오늘의 숙제</h3>
+              <button
+                onClick={() => isAdmin ? setIsAdmin(false) : setShowPinModal(true)}
+                className={`p-1.5 rounded-lg transition-colors ${isAdmin ? 'text-[#22C55E] hover:bg-green-50' : 'text-[#8C7B6B] hover:bg-gray-100'}`}
+                title={isAdmin ? '관리자 모드 해제' : '관리자 인증'}
+              >
+                {isAdmin ? <Unlock size={16} /> : <Lock size={16} />}
+              </button>
+            </div>
             <HomeworkChecklist
               items={items}
               onToggle={toggleComplete}
               onUploadPhoto={uploadPhoto}
+              isAdmin={isAdmin}
+              childName={child.name}
+              dateStr={today.toISOString().split('T')[0]}
             />
+            {showPinModal && (
+              <AdminPinModal
+                onSuccess={() => { setIsAdmin(true); setShowPinModal(false) }}
+                onClose={() => setShowPinModal(false)}
+              />
+            )}
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
             <div className="flex items-center justify-between mb-4">
@@ -110,6 +132,7 @@ export default function Schedule() {
               childName={child.name}
               stickers={stickers}
               onGiveSticker={giveSticker}
+              onRemoveSticker={removeSticker}
             />
           </div>
         </div>

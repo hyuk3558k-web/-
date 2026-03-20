@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, onSnapshot, setDoc, arrayUnion, increment } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, increment } from 'firebase/firestore'
 import { db } from '../firebase'
 
 export function useStickers(childId) {
@@ -25,5 +25,15 @@ export function useStickers(childId) {
     }, { merge: true })
   }
 
-  return { stickers, giveSticker }
+  const removeSticker = async (stickerIndex) => {
+    const docRef = doc(db, 'stickers', childId)
+    const newHistory = [...stickers.history]
+    newHistory.splice(stickerIndex, 1)
+    await updateDoc(docRef, {
+      total: increment(-1),
+      history: newHistory
+    })
+  }
+
+  return { stickers, giveSticker, removeSticker }
 }

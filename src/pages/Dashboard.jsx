@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import { CHILDREN, CHILD_IDS } from '../data/children'
 import { useHomework } from '../hooks/useHomework'
 import { useStickers } from '../hooks/useStickers'
+import { useEvents } from '../hooks/useEvents'
 import { calcAchievement } from '../utils/achievement'
 import { startAchievementMonitor, stopAchievementMonitor } from '../utils/notifications'
+import { useTelegramSettings } from '../hooks/useTelegramSettings'
+import { sendTelegramMessage, buildAchievementMessage } from '../utils/telegram'
 import ChildCard from '../components/ChildCard'
 import Calendar from '../components/Calendar'
+import EventModal from '../components/EventModal'
 import NotificationToggle from '../components/NotificationToggle'
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
@@ -43,6 +47,8 @@ export default function Dashboard() {
 
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
+  const [selectedDate, setSelectedDate] = useState(null)
+  const { events, addEvent, updateEvent, deleteEvent } = useEvents(year, month)
 
   // Collect today's achievement from all children for the calendar
   // We use a simple wrapper to aggregate data
@@ -67,7 +73,7 @@ export default function Dashboard() {
   }
 
   const onSelectDate = (dateStr) => {
-    console.log('Selected date:', dateStr)
+    setSelectedDate(dateStr)
   }
 
   return (
@@ -88,21 +94,35 @@ export default function Dashboard() {
         month={month}
         today={today}
         todayStr={todayStr}
+        events={events}
         onChangeMonth={onChangeMonth}
         onSelectDate={onSelectDate}
       />
+
+      {selectedDate && (
+        <EventModal
+          date={selectedDate}
+          events={events.filter(e => e.date === selectedDate)}
+          onAdd={addEvent}
+          onUpdate={updateEvent}
+          onDelete={deleteEvent}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </div>
   )
 }
 
 // Separate component so we can call hooks for each child to build achievementData
-function AchievementCalendar({ year, month, today, todayStr, onChangeMonth, onSelectDate }) {
+function AchievementCalendar({ year, month, today, todayStr, events, onChangeMonth, onSelectDate }) {
   const juwonHw = useHomework('juwon', today)
   const yewonHw = useHomework('yewon', today)
   const chaewonHw = useHomework('chaewon', today)
 
   const homeworkRef = useRef({ juwonHw, yewonHw, chaewonHw })
   homeworkRef.current = { juwonHw, yewonHw, chaewonHw }
+
+  const { settings: telegramSettings } = useTelegramSettings()
 
   useEffect(() => {
     startAchievementMonitor(() => [
@@ -112,6 +132,53 @@ function AchievementCalendar({ year, month, today, todayStr, onChangeMonth, onSe
     ])
     return () => stopAchievementMonitor()
   }, [])
+
+  // Telegram daily summary scheduler
+  useEffect(() => {
+    if (!telegramSettings.enabled || !telegramSettings.botToken || !telegramSettings.chatId) return
+
+    const colorEmojis = { juwon: '🔵', yewon: '🩷', chaewon: '🟢' }
+
+    function buildChildData(childId, items) {
+      const child = CHILDREN[childId]
+      const required = items.filter(i => i.required)
+      const completed = required.filter(i => i.completed).length
+      return {
+        name: child.name,
+        colorEmoji: colorEmojis[childId],
+        achievement: calcAchievement(items),
+        completed,
+        total: required.length
+      }
+    }
+
+    const checkAndSend = () => {
+      const now = new Date()
+      const [targetHour, targetMin] = telegramSettings.sendTime.split(':').map(Number)
+      const currentHour = now.getHours()
+      const currentMin = now.getMinutes()
+
+      if (currentHour === targetHour && currentMin === targetMin) {
+        const todayKey = now.toISOString().split('T')[0]
+        const lastSent = localStorage.getItem('telegram_last_sent')
+        if (lastSent === todayKey) return
+
+        const childrenData = [
+          buildChildData('juwon', homeworkRef.current.juwonHw.items),
+          buildChildData('yewon', homeworkRef.current.yewonHw.items),
+          buildChildData('chaewon', homeworkRef.current.chaewonHw.items),
+        ]
+
+        const message = buildAchievementMessage(childrenData, todayKey)
+        sendTelegramMessage(telegramSettings.botToken, telegramSettings.chatId, message)
+        localStorage.setItem('telegram_last_sent', todayKey)
+      }
+    }
+
+    const interval = setInterval(checkAndSend, 60000)
+    checkAndSend()
+    return () => clearInterval(interval)
+  }, [telegramSettings])
 
   const rates = [
     calcAchievement(juwonHw.items),
@@ -129,6 +196,7 @@ function AchievementCalendar({ year, month, today, todayStr, onChangeMonth, onSe
       year={year}
       month={month}
       achievementData={achievementData}
+      events={events}
       onSelectDate={onSelectDate}
       onChangeMonth={onChangeMonth}
     />

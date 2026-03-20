@@ -1,7 +1,9 @@
 import { getAchievementColor } from '../utils/achievement'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-export default function Calendar({ year, month, achievementData, onSelectDate, onChangeMonth }) {
+export default function Calendar({ year, month, achievementData, events = [], onSelectDate, onChangeMonth }) {
+  // Build a set of dates that have events for quick lookup
+  const eventDates = new Set(events.map(e => e.date))
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const days = []
@@ -31,9 +33,14 @@ export default function Calendar({ year, month, achievementData, onSelectDate, o
             <button key={i} onClick={() => onSelectDate(dateStr)}
               className="aspect-square flex flex-col items-center justify-center rounded-lg hover:bg-gray-50 text-sm">
               <span>{day}</span>
-              {rate !== null && (
-                <div className="w-2 h-2 rounded-full mt-0.5" style={{ backgroundColor: color }} />
-              )}
+              <div className="flex gap-0.5 mt-0.5">
+                {rate !== null && (
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                )}
+                {eventDates.has(dateStr) && (
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#6B9FD6' }} />
+                )}
+              </div>
             </button>
           )
         })}

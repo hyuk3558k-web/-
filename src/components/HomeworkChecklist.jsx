@@ -1,7 +1,22 @@
-import { Camera, Check, Clock } from 'lucide-react'
+import { Camera, Check, Clock, Download } from 'lucide-react'
 
-export default function HomeworkChecklist({ items, onToggle, onUploadPhoto }) {
+export default function HomeworkChecklist({ items, onToggle, onUploadPhoto, isAdmin, childName, dateStr }) {
   if (!items.length) return <p className="text-[#8C7B6B] text-sm">오늘 숙제 없음</p>
+
+  const handleDownload = async (url, filename) => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const ext = blob.type.split('/')[1] || 'jpg'
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename.replace(/\.jpg$/, `.${ext}`)
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 200)
+    } catch {
+      alert('사진 다운로드에 실패했습니다.')
+    }
+  }
 
   return (
     <div className="space-y-2">
@@ -23,6 +38,15 @@ export default function HomeworkChecklist({ items, onToggle, onUploadPhoto }) {
           </div>
           {item.photoUrl && (
             <img src={item.photoUrl} alt="인증" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+          )}
+          {isAdmin && item.photoUrl && (
+            <button
+              onClick={() => handleDownload(item.photoUrl, `${childName}_${dateStr}_${item.label}.jpg`)}
+              className="cursor-pointer text-[#8C7B6B] hover:text-[#22C55E] shrink-0 transition-colors"
+              title="사진 다운로드"
+            >
+              <Download size={18} />
+            </button>
           )}
           <label className="cursor-pointer text-[#8C7B6B] hover:text-[#F47458] shrink-0">
             <Camera size={18} />

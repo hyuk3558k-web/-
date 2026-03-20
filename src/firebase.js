@@ -4,13 +4,12 @@ import { getStorage } from 'firebase/storage'
 import { getAuth, signInAnonymously } from 'firebase/auth'
 
 const firebaseConfig = {
-  // TODO: Replace with actual Firebase project config
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyBNfH85KnUnov_8uFVRZxQb4TYDGSnxmMs",
+  authDomain: "seo-timetable.firebaseapp.com",
+  projectId: "seo-timetable",
+  storageBucket: "seo-timetable.firebasestorage.app",
+  messagingSenderId: "493605957497",
+  appId: "1:493605957497:web:3019ac071f0136e9b349a8"
 }
 
 const app = initializeApp(firebaseConfig)

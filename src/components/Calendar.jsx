@@ -38,7 +38,7 @@ export default function Calendar({ year, month, achievementData, events = [], on
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                 )}
                 {eventDates.has(dateStr) && (
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#6B9FD6' }} />
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#F47458' }} />
                 )}
               </div>
             </button>

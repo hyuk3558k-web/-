@@ -9,7 +9,7 @@ import HomeworkChecklist from '../components/HomeworkChecklist'
 import StickerPanel from '../components/StickerPanel'
 import NotificationToggle from '../components/NotificationToggle'
 import AdminPinModal from '../components/AdminPinModal'
-import { Lock, Unlock } from 'lucide-react'
+import { Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const DAY_LABELS = [
   { key: 'mon', label: '월' },
@@ -30,13 +30,34 @@ export default function Schedule() {
     todayDayIndex === 0 ? 'mon' : DAY_LABELS[todayDayIndex - 1]?.key || 'mon'
   )
 
+  // Date navigation for homework history (up to 7 days back)
+  const [homeworkDate, setHomeworkDate] = useState(today)
+  const homeworkDateStr = homeworkDate.toISOString().split('T')[0]
+  const isToday = homeworkDateStr === today.toISOString().split('T')[0]
+
+  const changeHomeworkDate = (delta) => {
+    const newDate = new Date(homeworkDate)
+    newDate.setDate(newDate.getDate() + delta)
+    // Don't go beyond today or more than 7 days back
+    const diffDays = Math.floor((today - newDate) / (1000 * 60 * 60 * 24))
+    if (diffDays < 0 || diffDays > 7) return
+    setHomeworkDate(newDate)
+  }
+
+  const formatDateKorean = (date) => {
+    const m = date.getMonth() + 1
+    const d = date.getDate()
+    const dayNames = ['일','월','화','수','목','금','토']
+    return `${m}/${d} (${dayNames[date.getDay()]})`
+  }
+
   // Build a date for the selected day of the current week
   const selectedDate = new Date(today)
   const diff = DAY_LABELS.findIndex(d => d.key === selectedDay) + 1 - today.getDay()
   selectedDate.setDate(today.getDate() + diff)
 
   const { blocks } = useSchedule(name, selectedDate)
-  const { items, toggleComplete, uploadPhoto } = useHomework(name, today)
+  const { items, toggleComplete, uploadPhoto } = useHomework(name, homeworkDate)
   const { stickers, giveSticker, removeSticker } = useStickers(name)
   const [isAdmin, setIsAdmin] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
@@ -99,7 +120,20 @@ export default function Schedule() {
         <div>
           <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)] mb-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[#3D3229]">✏️ 오늘의 숙제</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-[#3D3229]">✏️ 숙제</h3>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => changeHomeworkDate(-1)} className="p-1 rounded hover:bg-gray-100">
+                    <ChevronLeft size={16} className="text-[#8C7B6B]" />
+                  </button>
+                  <span className={`text-sm font-bold ${isToday ? 'text-[#F47458]' : 'text-[#8C7B6B]'}`}>
+                    {isToday ? '오늘' : formatDateKorean(homeworkDate)}
+                  </span>
+                  <button onClick={() => changeHomeworkDate(1)} className="p-1 rounded hover:bg-gray-100" disabled={isToday}>
+                    <ChevronRight size={16} className={isToday ? 'text-gray-300' : 'text-[#8C7B6B]'} />
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={() => isAdmin ? setIsAdmin(false) : setShowPinModal(true)}
                 className={`p-1.5 rounded-lg transition-colors ${isAdmin ? 'text-[#22C55E] hover:bg-green-50' : 'text-[#8C7B6B] hover:bg-gray-100'}`}
@@ -114,7 +148,7 @@ export default function Schedule() {
               onUploadPhoto={uploadPhoto}
               isAdmin={isAdmin}
               childName={child.name}
-              dateStr={today.toISOString().split('T')[0]}
+              dateStr={homeworkDateStr}
             />
             {showPinModal && (
               <AdminPinModal

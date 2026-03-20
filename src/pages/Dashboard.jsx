@@ -9,7 +9,7 @@ import { useTelegramSettings } from '../hooks/useTelegramSettings'
 import { sendTelegramMessage, buildAchievementMessage } from '../utils/telegram'
 import ChildCard from '../components/ChildCard'
 import Calendar from '../components/Calendar'
-import EventModal from '../components/EventModal'
+import EventDetail from '../components/EventDetail'
 import NotificationToggle from '../components/NotificationToggle'
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
@@ -100,13 +100,12 @@ export default function Dashboard() {
       />
 
       {selectedDate && (
-        <EventModal
+        <EventDetail
           date={selectedDate}
           events={events.filter(e => e.date === selectedDate)}
           onAdd={addEvent}
           onUpdate={updateEvent}
           onDelete={deleteEvent}
-          onClose={() => setSelectedDate(null)}
         />
       )}
     </div>

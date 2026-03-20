@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { generateHomeworkForDate } from '../utils/homeworkGenerator'
@@ -15,16 +15,22 @@ export function useHomework(childId, date) {
     if (!childId) return
     const docRef = doc(db, 'homework', childId, 'daily', dk)
 
+    // First check if document exists, create if not
     getDoc(docRef).then(snap => {
-      if (snap.exists()) {
-        setItems(snap.data().items)
-      } else {
+      if (!snap.exists()) {
         const generated = generateHomeworkForDate(childId, date)
         setDoc(docRef, { items: generated })
-        setItems(generated)
+      }
+    })
+
+    // Real-time listener for live updates
+    const unsub = onSnapshot(docRef, snap => {
+      if (snap.exists()) {
+        setItems(snap.data().items)
       }
       setLoading(false)
     })
+    return unsub
   }, [childId, dk])
 
   const toggleComplete = async (itemId) => {
